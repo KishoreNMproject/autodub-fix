@@ -1,8 +1,9 @@
 fastapi
 uvicorn
 python-multipart
+celery
+redis
 numpy
 torchaudio
 torch
-
 

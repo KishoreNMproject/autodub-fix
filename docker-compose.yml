@@ -5,3 +5,18 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+  worker:
+    build: .
+    command: celery -A services.celery_app.celery_app worker -l info
+    volumes:
+      - ./data:/app/data
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+  redis:
+    image: redis:7.2-bookworm
