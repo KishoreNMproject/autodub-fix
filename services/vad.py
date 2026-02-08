@@ -1,6 +1,7 @@
+import os
+
 import torch
 import torchaudio
-import os
 
 # Load Silero VAD model (once)
 model, utils = torch.hub.load(
