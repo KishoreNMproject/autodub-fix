@@ -48,7 +48,7 @@ def _load_vad():
 def split_speech(audio_path: str, output_dir: str):
     """
     Takes a WAV file and splits it into speech-only segments.
-    Returns list of segment file paths.
+    Returns list of timestamped speech segments.
     """
     os.makedirs(output_dir, exist_ok=True)
 
@@ -59,6 +59,7 @@ def split_speech(audio_path: str, output_dir: str):
     speech_timestamps = get_speech_timestamps(wav, model, sampling_rate=16000)
 
     segments = []
+    sample_rate = 16000
     for i, ts in enumerate(speech_timestamps):
         start = int(ts["start"])
         end = int(ts["end"])
@@ -67,7 +68,17 @@ def split_speech(audio_path: str, output_dir: str):
 
         chunk = wav[start:end]
         segment_path = os.path.join(output_dir, f"seg_{i:03d}.wav")
-        torchaudio.save(segment_path, chunk.unsqueeze(0), 16000)
-        segments.append(segment_path)
+        torchaudio.save(segment_path, chunk.unsqueeze(0), sample_rate)
+        segments.append(
+            {
+                "segment_index": i,
+                "segment_path": segment_path,
+                "start_sample": start,
+                "end_sample": end,
+                "start_ms": int(start * 1000 / sample_rate),
+                "end_ms": int(end * 1000 / sample_rate),
+                "duration_ms": int((end - start) * 1000 / sample_rate),
+            }
+        )
 
     return segments
