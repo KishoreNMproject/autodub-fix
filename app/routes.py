@@ -1,5 +1,6 @@
 import os
 import shutil
+import uuid
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, UploadFile, File
@@ -18,19 +19,26 @@ os.makedirs(SEGMENT_DIR, exist_ok=True)
 
 @router.post("/upload-video")
 async def upload_video(file: UploadFile = File(...)):
+    job_id = str(uuid.uuid4())
     filename = os.path.basename(file.filename)
-    video_path = f"{UPLOAD_DIR}/{filename}"
+    video_path = f"{UPLOAD_DIR}/{job_id}_{filename}"
+    segment_dir = f"{SEGMENT_DIR}/{job_id}"
+    output_dir = f"{OUTPUT_DIR}/{job_id}"
+
+    os.makedirs(segment_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     with open(video_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     task = celery_app.send_task(
         "process_video",
-        args=[video_path, SEGMENT_DIR, OUTPUT_DIR],
+        args=[video_path, segment_dir, output_dir],
     )
 
     return {
         "message": "Video enqueued for processing",
+        "job_id": job_id,
         "task_id": task.id,
     }
 

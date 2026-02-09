@@ -1,9 +1,10 @@
 import subprocess
 import os
 
-def extract_audio(video_path: str) -> str:
-    audio_path = video_path.replace(".mp4", ".wav")
-    audio_path = audio_path.replace("uploads", "outputs")
+def extract_audio(video_path: str, output_dir: str) -> str:
+    os.makedirs(output_dir, exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(video_path))[0]
+    audio_path = os.path.join(output_dir, f"{base_name}.wav")
 
     command = [
         "ffmpeg",
@@ -14,6 +15,11 @@ def extract_audio(video_path: str) -> str:
         audio_path
     ]
 
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(
+        command,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=True,
+    )
 
     return audio_path
