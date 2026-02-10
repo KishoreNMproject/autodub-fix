@@ -21,6 +21,7 @@ __pycache__/
 
 # Large model files
 models/faster-whisper-small/model.bin
+models/*
 models/*.bin
 models/**/*.bin
 
