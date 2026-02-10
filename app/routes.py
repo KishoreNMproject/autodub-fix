@@ -9,13 +9,17 @@ from services.celery_app import celery_app
 
 router = APIRouter()
 
-UPLOAD_DIR = "data/uploads"
-OUTPUT_DIR = "data/outputs"
-SEGMENT_DIR = "data/segments"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
+OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
+SEGMENT_DIR = os.path.join(DATA_DIR, "segments")
+TRANSCRIPT_DIR = os.path.join(DATA_DIR, "transcripts")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(SEGMENT_DIR, exist_ok=True)
+os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 
 @router.post("/upload-video")
 async def upload_video(
@@ -26,12 +30,14 @@ async def upload_video(
 ):
     job_id = str(uuid.uuid4())
     filename = os.path.basename(file.filename)
-    video_path = f"{UPLOAD_DIR}/{job_id}_{filename}"
-    segment_dir = f"{SEGMENT_DIR}/{job_id}"
-    output_dir = f"{OUTPUT_DIR}/{job_id}"
+    video_path = os.path.join(UPLOAD_DIR, f"{job_id}_{filename}")
+    segment_dir = os.path.join(SEGMENT_DIR, job_id)
+    output_dir = os.path.join(OUTPUT_DIR, job_id)
+    transcript_dir = os.path.join(TRANSCRIPT_DIR, job_id)
 
     os.makedirs(segment_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(transcript_dir, exist_ok=True)
 
     with open(video_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -44,7 +50,12 @@ async def upload_video(
             if speaker.strip()
         ]
 
-    pipeline_options = {"target_language": target_language}
+    pipeline_options = {
+        "target_language": target_language,
+        "job_id": job_id,
+        "transcripts_dir": TRANSCRIPT_DIR,
+        "transcript_dir": transcript_dir,
+    }
     if parsed_speakers:
         pipeline_options["selected_speakers"] = parsed_speakers
     if user_voice_id:
@@ -59,6 +70,7 @@ async def upload_video(
         "message": "Video enqueued for processing",
         "job_id": job_id,
         "task_id": task.id,
+        "transcript_dir": transcript_dir,
         "pipeline_options": pipeline_options,
     }
 

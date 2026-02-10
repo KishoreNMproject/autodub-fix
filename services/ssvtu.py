@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 
+def _normalize_speaker_token(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
 def select_speakers(
     segments: list[dict[str, Any]],
     selected_speakers: list[str] | None = None,
@@ -13,12 +17,33 @@ def select_speakers(
     if not selected_speakers:
         return segments
 
-    selected = set(selected_speakers)
-    return [
+    selected = {
+        _normalize_speaker_token(speaker)
+        for speaker in selected_speakers
+        if _normalize_speaker_token(speaker)
+    }
+    if not selected or "all" in selected or "*" in selected:
+        return segments
+
+    filtered = [
         segment
         for segment in segments
-        if segment.get("speaker_id") in selected
+        if _normalize_speaker_token(segment.get("speaker_id")) in selected
+        or _normalize_speaker_token(segment.get("voice_id")) in selected
     ]
+    if filtered:
+        return filtered
+
+    if "ai" in selected:
+        unique_speakers = {
+            _normalize_speaker_token(segment.get("speaker_id"))
+            for segment in segments
+            if _normalize_speaker_token(segment.get("speaker_id"))
+        }
+        if len(unique_speakers) == 1:
+            return segments
+
+    return filtered
 
 
 def build_translation_units(
@@ -43,6 +68,7 @@ def build_translation_units(
                 "end_ms": segment.get("end_ms"),
                 "duration_ms": segment.get("duration_ms"),
                 "target_language": target_language,
+                "transcript_text": segment.get("transcript_text", ""),
                 "status": "ready_for_translation",
             }
         )
