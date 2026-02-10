@@ -35,6 +35,8 @@ data/segments/
 data/audio/
 data/tts/
 data/translations/
+data/uploads/
+data/
 
 # Other
 .DS_Store
