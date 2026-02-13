@@ -62,10 +62,12 @@ def transcribe_segments(
     for segment in segments:
         item = dict(segment)
         text = ""
+        detected_source_language = str(source_language or "").strip().lower() or "unknown"
+        detected_source_language_probability = 0.0
 
         if model is not None:
             try:
-                result_iter, _ = model.transcribe(
+                result_iter, info = model.transcribe(
                     audio=item["segment_path"],
                     language=source_language,
                     beam_size=5,
@@ -73,6 +75,12 @@ def transcribe_segments(
                     vad_filter=False,
                 )
                 text = " ".join(part.text.strip() for part in result_iter).strip()
+                if not source_language:
+                    inferred_language = str(getattr(info, "language", "") or "").strip().lower()
+                    if inferred_language:
+                        detected_source_language = inferred_language
+                    inferred_probability = getattr(info, "language_probability", 0.0) or 0.0
+                    detected_source_language_probability = float(inferred_probability)
             except Exception:
                 text = ""
 
@@ -80,6 +88,11 @@ def transcribe_segments(
             text = "[transcription unavailable]"
 
         item["transcript_text"] = text
+        item["detected_source_language"] = detected_source_language
+        item["detected_source_language_probability"] = round(
+            detected_source_language_probability,
+            4,
+        )
         output.append(item)
 
     return output

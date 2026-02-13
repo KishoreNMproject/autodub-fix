@@ -57,6 +57,11 @@ def build_translation_units(
     units: list[dict[str, Any]] = []
     for segment in segments:
         target_voice_id = user_voice_id or segment.get("voice_id")
+        translated_text = (
+            segment.get("translated_text")
+            or segment.get("target_text")
+            or segment.get("transcript_text", "")
+        )
         units.append(
             {
                 "segment_index": segment.get("segment_index"),
@@ -69,6 +74,8 @@ def build_translation_units(
                 "duration_ms": segment.get("duration_ms"),
                 "target_language": target_language,
                 "transcript_text": segment.get("transcript_text", ""),
+                "translated_text": translated_text,
+                "translation_status": segment.get("translation_status"),
                 "status": "ready_for_translation",
             }
         )

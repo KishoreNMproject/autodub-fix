@@ -15,29 +15,46 @@ UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
 SEGMENT_DIR = os.path.join(DATA_DIR, "segments")
 TRANSCRIPT_DIR = os.path.join(DATA_DIR, "transcripts")
+TRANSLATION_SEGMENTS_DIR = os.path.join(DATA_DIR, "translations", "segments")
+FINAL_OUTPUT_ROOT = os.path.join(DATA_DIR, "outputs")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(SEGMENT_DIR, exist_ok=True)
 os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
+os.makedirs(TRANSLATION_SEGMENTS_DIR, exist_ok=True)
+os.makedirs(FINAL_OUTPUT_ROOT, exist_ok=True)
 
 @router.post("/upload-video")
 async def upload_video(
     file: UploadFile = File(...),
-    target_language: str = Form("en"),
-    selected_speakers: str | None = Form(None),
-    user_voice_id: str | None = Form(None),
+    target_language: str = Form(
+        "en",
+        description="Dub-to language for the translated dubbing audio track.",
+    ),
+    selected_speakers: str | None = Form(
+        None,
+        description="Optional comma-separated speaker IDs to dub (e.g., spk_01,spk_02).",
+    ),
+    user_voice_id: str | None = Form(
+        None,
+        description="Optional target voice ID for UVIVD voice mapping during dubbing.",
+    ),
 ):
+    resolved_target_language = str(target_language or "en").strip() or "en"
+
     job_id = str(uuid.uuid4())
     filename = os.path.basename(file.filename)
     video_path = os.path.join(UPLOAD_DIR, f"{job_id}_{filename}")
     segment_dir = os.path.join(SEGMENT_DIR, job_id)
     output_dir = os.path.join(OUTPUT_DIR, job_id)
     transcript_dir = os.path.join(TRANSCRIPT_DIR, job_id)
+    translation_dir = os.path.join(TRANSLATION_SEGMENTS_DIR, job_id)
 
     os.makedirs(segment_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(transcript_dir, exist_ok=True)
+    os.makedirs(translation_dir, exist_ok=True)
 
     with open(video_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -51,10 +68,13 @@ async def upload_video(
         ]
 
     pipeline_options = {
-        "target_language": target_language,
+        "target_language": resolved_target_language,
         "job_id": job_id,
         "transcripts_dir": TRANSCRIPT_DIR,
         "transcript_dir": transcript_dir,
+        "translations_dir": TRANSLATION_SEGMENTS_DIR,
+        "translation_dir": translation_dir,
+        "final_output_root": FINAL_OUTPUT_ROOT,
     }
     if parsed_speakers:
         pipeline_options["selected_speakers"] = parsed_speakers
@@ -71,8 +91,29 @@ async def upload_video(
         "job_id": job_id,
         "task_id": task.id,
         "transcript_dir": transcript_dir,
+        "translation_dir": translation_dir,
+        "final_output_root": FINAL_OUTPUT_ROOT,
         "pipeline_options": pipeline_options,
     }
+
+
+@router.post("/models/preload-xtts")
+async def preload_xtts_model(
+    load_model: bool = Form(
+        False,
+        description="If true, also attempts to load XTTS model after cache download.",
+    ),
+):
+    task = celery_app.send_task(
+        "preload_xtts_model",
+        kwargs={"load_model": bool(load_model)},
+    )
+    return {
+        "message": "XTTS preload enqueued",
+        "task_id": task.id,
+        "load_model": bool(load_model),
+    }
+
 
 @router.get("/tasks/{task_id}")
 async def get_task_status(task_id: str):
