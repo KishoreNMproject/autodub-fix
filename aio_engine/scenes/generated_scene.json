@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "prompt": "Create a dark fantasy snowy survival game with wolves and crafting.",
+    "version": "0.2.0"
+  },
+  "world": {
+    "width": 960,
+    "height": 640,
+    "biome": "snow",
+    "weather": [
+      "snow"
+    ]
+  },
+  "entities": [
+    {
+      "id": "player",
+      "type": "player",
+      "x": 100,
+      "y": 100,
+      "w": 24,
+      "h": 24,
+      "hp": 100,
+      "speed": 3
+    },
+    {
+      "id": "wolf_0",
+      "type": "wolf",
+      "x": 260,
+      "y": 260,
+      "w": 24,
+      "h": 24,
+      "hp": 40,
+      "speed": 2
+    },
+    {
+      "id": "wolf_1",
+      "type": "wolf",
+      "x": 330,
+      "y": 260,
+      "w": 24,
+      "h": 24,
+      "hp": 40,
+      "speed": 2
+    },
+    {
+      "id": "wolf_2",
+      "type": "wolf",
+      "x": 400,
+      "y": 260,
+      "w": 24,
+      "h": 24,
+      "hp": 40,
+      "speed": 2
+    }
+  ],
+  "systems": {
+    "physics": true,
+    "inventory": true,
+    "weather": true,
+    "enemy_ai": true,
+    "crafting": true,
+    "survival": true
+  },
+  "gameplay_blocks": [
+    {
+      "name": "physics",
+      "enabled": true,
+      "config": {}
+    },
+    {
+      "name": "inventory",
+      "enabled": true,
+      "config": {}
+    },
+    {
+      "name": "weather",
+      "enabled": true,
+      "config": {}
+    },
+    {
+      "name": "enemy_ai",
+      "enabled": true,
+      "config": {}
+    },
+    {
+      "name": "crafting",
+      "enabled": true,
+      "config": {}
+    },
+    {
+      "name": "survival",
+      "enabled": true,
+      "config": {}
+    }
+  ]
+}
